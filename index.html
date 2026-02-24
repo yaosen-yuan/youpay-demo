@@ -1048,6 +1048,209 @@
   .reveal-delay-1 { transition-delay: 0.1s; }
   .reveal-delay-2 { transition-delay: 0.2s; }
   .reveal-delay-3 { transition-delay: 0.3s; }
+
+  /* ═══════════════════════════════════════
+     RWD — Tablet (≤ 1024px)
+  ═══════════════════════════════════════ */
+  @media (max-width: 1024px) {
+    .hero-inner {
+      grid-template-columns: 1fr !important;
+      gap: 48px;
+    }
+    .hero-visual-wrap {
+      display: none;
+    }
+    .hero-content {
+      max-width: 100%;
+      text-align: center;
+    }
+    .hero-actions { justify-content: center; }
+    .hero-stats { justify-content: center; }
+    .hero-badge { margin: 0 auto; }
+
+    .services-grid {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 20px;
+    }
+
+    .steps-grid {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 24px;
+    }
+    .steps-connector { display: none; }
+
+    .stores-inner {
+      grid-template-columns: 1fr !important;
+      gap: 40px;
+    }
+    .stores-cards {
+      grid-template-columns: 1fr 1fr !important;
+    }
+
+    .footer-top {
+      grid-template-columns: 1fr 1fr 1fr !important;
+      gap: 32px;
+    }
+    .footer-brand {
+      grid-column: 1 / -1;
+    }
+
+    .cta-section .cta-inner,
+    .cta-section > div {
+      grid-template-columns: 1fr !important;
+      text-align: center;
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     RWD — Mobile (≤ 768px)
+  ═══════════════════════════════════════ */
+  @media (max-width: 768px) {
+    /* Navbar */
+    .navbar-inner {
+      padding: 0 20px;
+    }
+    .nav-btn-wrap {
+      gap: 8px;
+    }
+    .btn-login, .btn-register {
+      padding: 7px 14px !important;
+      font-size: 13px !important;
+    }
+
+    /* Hero */
+    .hero {
+      padding: 100px 0 60px;
+    }
+    .hero-inner {
+      padding: 0 20px;
+    }
+    .hero-title {
+      font-size: clamp(32px, 9vw, 48px) !important;
+    }
+    .hero-subtitle {
+      font-size: 15px !important;
+    }
+    .hero-actions {
+      flex-direction: column;
+      align-items: center;
+      gap: 12px;
+    }
+    .btn-primary, .btn-secondary {
+      width: 100%;
+      max-width: 280px;
+      text-align: center;
+    }
+    .hero-stats {
+      flex-direction: row;
+      flex-wrap: wrap;
+      gap: 16px 28px;
+      justify-content: center;
+    }
+
+    /* Section padding */
+    .services, .stores-section, .cta-section {
+      padding: 64px 0 !important;
+    }
+    .how-inner, .services-header, .services-grid,
+    .stores-inner, .storeS-inner {
+      padding: 0 20px;
+    }
+    section .container,
+    .services > div,
+    .stores-section > div {
+      padding: 0 20px;
+    }
+
+    /* Section titles */
+    .section-title {
+      font-size: clamp(24px, 7vw, 36px) !important;
+    }
+    .section-desc {
+      font-size: 15px !important;
+    }
+
+    /* Services */
+    .services-grid {
+      grid-template-columns: 1fr !important;
+    }
+    .service-card {
+      padding: 28px 24px !important;
+    }
+
+    /* How It Works */
+    .steps-grid {
+      grid-template-columns: 1fr !important;
+      padding: 0 20px;
+    }
+    .step-item {
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+    }
+    .step-num-wrap {
+      flex-shrink: 0;
+      width: 48px !important;
+      height: 48px !important;
+    }
+    .step-order {
+      font-size: 20px !important;
+    }
+
+    /* Stores Section */
+    .stores-inner {
+      padding: 0 20px;
+    }
+    .stores-cards {
+      grid-template-columns: 1fr 1fr !important;
+      gap: 12px !important;
+    }
+    .stores-highlights,
+    .stores-highlight {
+      gap: 16px !important;
+    }
+
+    /* CTA Section */
+    .cta-section {
+      padding: 60px 20px !important;
+    }
+    .cta-title {
+      font-size: clamp(22px, 6vw, 32px) !important;
+    }
+
+    /* Footer */
+    .footer-inner,
+    .footer-top {
+      padding: 0 20px;
+      grid-template-columns: 1fr !important;
+      gap: 32px;
+    }
+    .footer-brand {
+      grid-column: auto;
+    }
+    .footer-bottom {
+      flex-direction: column !important;
+      gap: 8px;
+      text-align: center;
+      padding: 0 20px;
+    }
+  }
+
+  /* ═══════════════════════════════════════
+     RWD — Small Mobile (≤ 480px)
+  ═══════════════════════════════════════ */
+  @media (max-width: 480px) {
+    .stores-cards {
+      grid-template-columns: 1fr !important;
+    }
+    .hero-stats > div {
+      min-width: 80px;
+    }
+    .service-tags {
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+  }
 </style>
 </head>
 <body>
@@ -1076,7 +1279,7 @@
       </div>
       <h1 class="hero-title">
         串接四大超商<br>
-        <span class="accent">金流全自動</span><br>
+        <span class="accent">全自動</span><br>
         <span class="line2">一站搞定</span>
       </h1>
       <p class="hero-subtitle">
@@ -1296,9 +1499,9 @@
 <section class="services" id="services">
   <div class="services-header reveal">
     <div class="section-label">核心服務</div>
-    <h2 class="section-title">三大服務模組，<br>完整覆蓋您的金流需求</h2>
+    <h2 class="section-title">三大服務模組，<br>完整覆蓋您的業務需求</h2>
     <p class="section-desc">
-      從超商代收到發票開立、簡訊通知再到報表整合，<br>白鯨科技提供企業一站式的超商金流管理解決方案。
+      從超商代收到發票開立、簡訊通知再到報表整合，<br>白鯨科技提供企業一站式的超商業務管理解決方案。
     </p>
   </div>
   <div class="services-grid">
@@ -1315,12 +1518,11 @@
       <div class="service-num">01 / Service</div>
       <h3 class="service-name">四大超商<br>系統服務</h3>
       <p class="service-desc">
-        單一 API 介接 7-ELEVEN、全家、萊爾富、OK mart，免分別洽談、免分別對帳。支援條碼繳費、代碼付款等多元收款模式，快速開通、輕鬆維運。
+        單一 API 介接 7-ELEVEN、全家、萊爾富、OK mart，支援代碼付款等多元收款模式，快速開通、輕鬆維運。
       </p>
       <div class="service-tags">
         <span class="tag">API 串接</span>
         <span class="tag">超商代收</span>
-        <span class="tag">條碼付款</span>
         <span class="tag">代碼繳費</span>
       </div>
       <a href="#" class="service-link">
@@ -1341,11 +1543,10 @@
       <div class="service-num">02 / Service</div>
       <h3 class="service-name">發票及簡訊<br>流程代管</h3>
       <p class="service-desc">
-        付款完成自動開立電子發票，符合財政部 B2C 合規規範；同步觸發 SMS 通知消費者，減少客服量、提升購物體驗，全程零人工介入。
+        付款完成自動開立電子發票，同步觸發 SMS 通知消費者，減少客服量、提升購物體驗，全程零人工介入。
       </p>
       <div class="service-tags">
         <span class="tag">電子發票</span>
-        <span class="tag">財政部合規</span>
         <span class="tag">SMS 通知</span>
         <span class="tag">自動化流程</span>
       </div>
@@ -1582,7 +1783,7 @@
         </div>
         <p class="footer-tagline">
           串接全台四大超商，讓企業收款更簡單。<br>
-          白鯨科技——您的超商金流整合夥伴。
+          白鯨科技——您的業務夥伴。
         </p>
         <div class="footer-contact">
           <a href="tel:04-25350077">
