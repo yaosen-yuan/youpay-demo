@@ -1062,35 +1062,41 @@
       grid-template-columns: 1fr !important;
       gap: 24px !important;
     }
-    /* Hero 內容區留足夠上方空間 */
+    /* Hero 內容置中 */
     .hero-content {
       padding-top: 16px !important;
+      text-align: center !important;
     }
-    /* 外框：置中並完整顯示 */
+    /* 外框：固定高度，overflow hidden 防跑版 */
     .hero-visual {
       width: 100% !important;
-      overflow: hidden !important;
       position: relative !important;
-      height: 430px !important;
+      height: 460px !important;
+      overflow: hidden !important;
     }
-    /* 縮放容器置中 */
+    /* 縮放容器：dashboard-main 是 480px wide, top:30px right:0
+       → 置中方式：把整個 wrap 往左推讓 dashboard-main 置中 */
     .hero-visual-wrap {
       display: block !important;
       position: absolute !important;
       top: 0 !important;
+      /* 讓 480px card 置中於螢幕 */
       left: 50% !important;
-      transform: translateX(-50%) scale(0.85) !important;
-      transform-origin: top left !important;
-      width: 420px !important;
-      height: 520px !important;
+      transform: translateX(-50%) scale(0.78) !important;
+      transform-origin: top center !important;
+      width: 480px !important;
+      height: 600px !important;
     }
-    /* Dashboard card 強制置中 */
+    /* Dashboard card reset 定位，讓 wrap 的置中生效 */
     .dashboard-main {
+      position: relative !important;
       right: auto !important;
-      left: 50% !important;
-      transform: translateX(-50%) !important;
-      width: 400px !important;
+      left: auto !important;
+      top: auto !important;
+      transform: none !important;
+      width: 100% !important;
       animation: none !important;
+      margin: 0 auto !important;
     }
     /* 停用浮動動畫 */
     .float, .float2, .pulse {
@@ -1222,31 +1228,41 @@
     /* How It Works */
     .steps-grid {
       grid-template-columns: 1fr !important;
-      padding: 0 20px;
+      padding: 0 24px;
+      gap: 40px !important;
     }
     .step-item {
-      display: flex;
-      flex-direction: row;
-      gap: 16px;
-      align-items: flex-start;
-      text-align: left;
+      display: grid !important;
+      grid-template-columns: 64px 1fr !important;
+      grid-template-rows: auto auto !important;
+      gap: 0 16px !important;
+      align-items: start !important;
+      text-align: left !important;
     }
     .step-num-wrap {
-      flex-shrink: 0;
-      width: 48px !important;
-      height: 48px !important;
-      min-width: 48px;
+      grid-row: 1 / 3 !important;
+      width: 64px !important;
+      height: 64px !important;
+      flex-shrink: 0 !important;
+      align-self: start !important;
     }
     .step-title {
-      font-size: 16px !important;
+      font-size: 18px !important;
       writing-mode: horizontal-tb !important;
       text-orientation: mixed !important;
       white-space: normal !important;
       word-break: keep-all !important;
-      width: auto !important;
+      width: 100% !important;
+      line-height: 1.4 !important;
+      margin-bottom: 8px !important;
+    }
+    .step-desc {
+      font-size: 14px !important;
+      line-height: 1.7 !important;
+      width: 100% !important;
     }
     .step-order {
-      font-size: 20px !important;
+      font-size: 22px !important;
     }
 
     /* Stores Section */
