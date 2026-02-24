@@ -1060,35 +1060,43 @@
     /* Hero 單欄：文字在上，Dashboard 在下 */
     .hero-inner {
       grid-template-columns: 1fr !important;
-      gap: 32px !important;
-      padding-bottom: 40px !important;
+      gap: 24px !important;
     }
-    /* 外框容器：完整顯示 Dashboard */
+    /* Hero 內容區留足夠上方空間 */
+    .hero-content {
+      padding-top: 16px !important;
+    }
+    /* 外框：置中並完整顯示 */
     .hero-visual {
       width: 100% !important;
-      height: 420px !important;
-      overflow: visible !important;
+      overflow: hidden !important;
       position: relative !important;
-      display: flex !important;
-      justify-content: center !important;
+      height: 430px !important;
     }
-    /* 縮放容器：0.72 比例置中 */
+    /* 縮放容器置中 */
     .hero-visual-wrap {
       display: block !important;
-      position: relative !important;
-      top: auto !important;
-      left: auto !important;
-      transform: scale(0.72) !important;
-      transform-origin: top center !important;
-      width: 480px !important;
-      height: 560px !important;
-      flex-shrink: 0 !important;
+      position: absolute !important;
+      top: 0 !important;
+      left: 50% !important;
+      transform: translateX(-50%) scale(0.85) !important;
+      transform-origin: top left !important;
+      width: 420px !important;
+      height: 520px !important;
+    }
+    /* Dashboard card 強制置中 */
+    .dashboard-main {
+      right: auto !important;
+      left: 50% !important;
+      transform: translateX(-50%) !important;
+      width: 400px !important;
+      animation: none !important;
     }
     /* 停用浮動動畫 */
     .float, .float2, .pulse {
       animation: none !important;
     }
-    /* 隱藏浮動小卡（避免溢出） */
+    /* 隱藏浮動小卡 */
     .mini-card {
       display: none !important;
     }
