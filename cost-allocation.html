@@ -4,7 +4,8 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>共享辦公室費用分攤計算</title>
-<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+TC:wght@400;600;700&family=Noto+Sans+TC:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Zen+Kaku+Gothic+Antique:wght@400;700;900&family=Noto+Sans+TC:wght@300;400;500;600&family=DM+Mono:wght@400;500&display=swap" rel="stylesheet">
 <style>
 :root {
   --bg: #f7f4ef;
@@ -18,7 +19,7 @@
   --warn-light: #fdf0e6;
   --gold: #b8962e;
   --gold-light: #fdf7e6;
-} 
+}
 
 * { margin: 0; padding: 0; box-sizing: border-box; }
 
@@ -427,28 +428,17 @@ tr.total-row td:not(:first-child) { font-size: 0.85rem; }
   line-height: 1.7;
 }
 
-/* Print */
-.print-btn {
-  position: fixed;
-  bottom: 32px;
-  right: 32px;
-  background: var(--ink);
-  color: #f0ebe3;
-  border: none;
-  border-radius: 2px;
-  padding: 12px 24px;
-  font-family: 'Noto Sans TC', sans-serif;
-  font-size: 0.78rem;
-  letter-spacing: 0.08em;
-  cursor: pointer;
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.2);
-  transition: all 0.2s;
+/* Action Bar */
+.action-bar { display:flex; gap:12px; margin-bottom:20px; flex-wrap:wrap; }
+.btn-primary {
+  padding:10px 24px;
+  background:var(--ink); color:#f0ebe3;
+  border:none; border-radius:2px;
+  font-size:0.82rem; font-family:'Noto Sans TC', sans-serif;
+  cursor:pointer; display:flex; align-items:center; gap:8px;
+  transition:opacity 0.15s;
 }
-
-.print-btn:hover { background: #2d6a4f; }
+.btn-primary:hover { opacity:0.85; }
 
 @media (max-width: 900px) {
   .app { grid-template-columns: 1fr; }
@@ -458,13 +448,18 @@ tr.total-row td:not(:first-child) { font-size: 0.85rem; }
 }
 
 @media print {
-  .panel-left, .print-btn { display: none; }
+  .panel-left, .action-bar { display: none; }
   .panel-right { padding: 0; }
   .app { display: block; }
 }
 </style>
 </head>
 <body>
+<div style="background:#ffffff;padding:12px 36px;display:flex;align-items:center;gap:20px;border-bottom:3px solid #b8962e;position:sticky;top:0;z-index:999;box-shadow:0 2px 8px rgba(0,0,0,0.06);">
+  <a href="tools.html" style="color:#7a6e64;font-size:0.78rem;font-family:'Noto Sans TC',sans-serif;letter-spacing:0.06em;text-decoration:none;display:flex;align-items:center;gap:6px;transition:color 0.15s;font-weight:500;" onmouseover="this.style.color='#1c1814'" onmouseout="this.style.color='#7a6e64'">← 返回首頁</a>
+  <span style="color:#e2d9cc;font-size:0.9rem;">|</span>
+  <span style="color:#b8b0a6;font-size:0.72rem;font-family:'DM Mono',monospace;letter-spacing:0.08em;">漁人町 業務工具系統</span>
+</div>
 
 <div class="app">
 
@@ -552,6 +547,12 @@ tr.total-row td:not(:first-child) { font-size: 0.85rem; }
 
   <!-- RIGHT: Output -->
   <div class="panel-right">
+
+    <div class="action-bar">
+      <button class="btn-primary" onclick="downloadExcel()">📊 下載 Excel</button>
+      <button class="btn-primary" onclick="downloadPDF()">🖨 列印 / PDF</button>
+    </div>
+
     <div class="output-header">
       <div class="month-label" id="display_month">2026年 3月</div>
       <h2>費用分攤明細</h2>
@@ -658,8 +659,6 @@ tr.total-row td:not(:first-child) { font-size: 0.85rem; }
   </div>
 </div>
 
-<button class="print-btn" onclick="window.print()">🖨 列印 / 匯出 PDF</button>
-
 <script>
 function fmt(n) {
   return '$' + Math.round(n).toLocaleString();
@@ -751,6 +750,86 @@ function calculate() {
 function set(id, val) {
   const el = document.getElementById(id);
   if (el) el.textContent = val;
+}
+
+function downloadPDF() { window.print(); }
+
+function downloadExcel() {
+  const space   = parseFloat(document.getElementById('cost_space').value)   || 0;
+  const pc      = parseFloat(document.getElementById('cost_pc').value)      || 0;
+  const printer = parseFloat(document.getElementById('cost_printer').value) || 0;
+  const water   = parseFloat(document.getElementById('cost_water').value)   || 0;
+  const supply  = parseFloat(document.getElementById('cost_supply').value)  || 0;
+  const net     = parseFloat(document.getElementById('cost_net').value)     || 0;
+  const seats   = Math.max(1, parseInt(document.getElementById('total_seats').value)   || 10);
+  const tenants = Math.max(1, parseInt(document.getElementById('total_tenants').value) || 4);
+  const total   = space + pc + printer + water + supply + net;
+
+  // Plan A
+  const a_per_seat = total / seats;
+  const a_2seats   = a_per_seat * 2;
+
+  // Plan B
+  const b_space_seat     = space   / seats;
+  const b_pc_seat        = pc      / seats;
+  const b_net_tenant     = net     / tenants;
+  const b_water_tenant   = water   / tenants;
+  const b_supply_tenant  = supply  / tenants;
+  const b_per_seat       = b_space_seat + b_pc_seat;
+  const b_2seats         = b_per_seat * 2 + b_net_tenant + b_water_tenant + b_supply_tenant;
+
+  const d = new Date();
+  const month = `${d.getFullYear()}年${d.getMonth()+1}月`;
+
+  const rows = [
+    ['漁人町 · 共享辦公室費用分攤計算'],
+    [month],
+    [],
+    ['── 費用輸入 ──'],
+    ['項目', '月費（元）'],
+    ['場地租金', space],
+    ['電腦設備折舊', pc],
+    ['印表機', printer],
+    ['飲水機', water],
+    ['辦公室耗材', supply],
+    ['網路費', net],
+    ['月費合計', total],
+    [],
+    ['── 基本設定 ──'],
+    ['總座位數', seats],
+    ['租戶數', tenants],
+    [],
+    ['── 方案 A：全包月租（每座位）──'],
+    ['費用項目', '每座位分攤'],
+    ['場地租金', space / seats],
+    ['網路費', net / seats],
+    ['飲水機', water / seats],
+    ['電腦設備', pc / seats],
+    ['辦公室耗材', supply / seats],
+    ['印表機', printer / seats],
+    ['每座位月租', a_per_seat],
+    ['範例：2座位租戶月付', a_2seats],
+    [],
+    ['── 方案 B：基本租金＋計量費（每戶）──'],
+    ['費用項目', '分攤方式', '金額'],
+    ['場地租金', '按座位', b_space_seat],
+    ['電腦設備', '按座位', b_pc_seat],
+    ['基本月租（每座位）', '', b_per_seat],
+    ['網路費', '按戶', b_net_tenant],
+    ['飲水機', '按戶', b_water_tenant],
+    ['辦公室耗材', '按戶', b_supply_tenant],
+    ['印表機', '按頁計量', 2],
+    ['範例：2座位租戶月付（不含印表機）', '', b_2seats],
+    [],
+    ['── 推薦建議 ──'],
+    [document.getElementById('rec_text').textContent],
+  ];
+
+  const wb = XLSX.utils.book_new();
+  const ws = XLSX.utils.aoa_to_sheet(rows);
+  ws['!cols'] = [{wch:30},{wch:20},{wch:16}];
+  XLSX.utils.book_append_sheet(wb, ws, '費用分攤計算');
+  XLSX.writeFile(wb, `漁人町費用分攤_${d.getFullYear()}${String(d.getMonth()+1).padStart(2,'0')}.xlsx`);
 }
 
 // Init
