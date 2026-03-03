@@ -276,6 +276,101 @@ body { background:var(--bg); font-family:'Noto Sans TC', sans-serif; color:var(-
 }
 .btn-secondary:hover { border-color:var(--accent); color:var(--accent); }
 
+/* ══════════════════════════════
+   RWD — TABLET (≤ 960px)
+══════════════════════════════ */
+@media (max-width: 960px) {
+  .app { grid-template-columns: 280px 1fr; }
+  .panel-left { padding: 24px 20px; }
+  .panel-right { padding: 28px 24px; }
+  .qp-header { padding: 24px 24px 18px; }
+  .qp-parties { padding: 18px 24px; }
+  .qp-footer { padding: 16px 24px; }
+  .items-table thead th,
+  .items-table tbody td,
+  .items-table tfoot td { padding: 8px 10px; font-size: 0.78rem; }
+}
+
+/* ══════════════════════════════
+   RWD — MOBILE (≤ 680px)
+   → 上下堆疊: 設定欄在上, 預覽在下
+══════════════════════════════ */
+@media (max-width: 680px) {
+  /* 整體改為單欄 */
+  .app {
+    display: flex;
+    flex-direction: column;
+  }
+
+  /* 左側設定欄: 取消 sticky / 固定高度 */
+  .panel-left {
+    position: static;
+    height: auto;
+    padding: 20px 16px;
+    overflow-y: visible;
+  }
+
+  /* 右側內容欄 */
+  .panel-right {
+    padding: 20px 14px;
+  }
+
+  /* nav bar */
+  div[style*="position:sticky"] {
+    padding: 10px 16px !important;
+  }
+
+  /* Quote preview 表格: 允許水平捲動 */
+  .quote-preview {
+    overflow-x: auto;
+  }
+  .qp-header {
+    flex-direction: column;
+    padding: 18px 16px 14px;
+    gap: 12px;
+  }
+  .qp-meta { text-align: left; }
+  .qp-meta .quote-title { font-size: 1.2rem; }
+  .qp-parties {
+    grid-template-columns: 1fr;
+    padding: 14px 16px;
+    gap: 16px;
+  }
+  .qp-footer {
+    padding: 14px 16px;
+    grid-template-columns: 1fr;
+    gap: 12px;
+  }
+  .qp-footer .stamp { display: none; }
+
+  /* 表格: 讓 items-table 在容器內捲動 */
+  .qp-items { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .items-table { min-width: 540px; }
+  .items-table thead th,
+  .items-table tbody td,
+  .items-table tfoot td { padding: 7px 8px; font-size: 0.74rem; }
+
+  /* Item editor: 捲動 */
+  .item-editor { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+  .item-editor-head { min-width: 520px; }
+  .item-row { min-width: 520px; }
+
+  /* row2 / row3 → 單欄 */
+  .row2 { grid-template-columns: 1fr; }
+  .row3 { grid-template-columns: 1fr 1fr; }
+
+  /* action-bar: 全寬按鈕 */
+  .action-bar { flex-direction: column; }
+  .btn-primary, .btn-secondary {
+    width: 100%;
+    justify-content: center;
+    padding: 12px 16px;
+  }
+
+  /* editor section h3 字型 */
+  .editor-section h3 { font-size: 0.9rem; }
+}
+
 /* ── Print Styles ── */
 @media print {
   body * { visibility:hidden; }
