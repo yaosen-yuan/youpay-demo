@@ -1,0 +1,874 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>漁人町 · 電力分析表</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Sans+TC:wght@400;500;700&family=JetBrains+Mono:wght@400;700&display=swap" rel="stylesheet">
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+:root{
+  --bg:#0d1117;--bg2:#131921;--bg3:#0f172a;
+  --border:#1e293b;--border2:#0f172a;
+  --red:#e8522a;--blue:#3a7bd5;--gold:#f0a830;--green:#22c55e;--purple:#a855f7;
+  --t1:#e2e8f0;--t2:#94a3b8;--t3:#64748b;--t4:#475569;--t5:#334155;
+  --mono:'JetBrains Mono',monospace;
+}
+html{font-size:16px}
+body{min-height:100vh;background:var(--bg);color:var(--t1);font-family:'Noto Sans TC',sans-serif;padding-bottom:40px}
+
+/* BACK BAR */
+.back-bar{position:sticky;top:0;z-index:100;background:rgba(13,17,23,.95);backdrop-filter:blur(8px);border-bottom:1px solid var(--border);padding:10px 20px;display:flex;align-items:center;gap:12px}
+.back-btn{color:var(--t3);font-size:13px;background:none;border:1px solid var(--border);border-radius:6px;padding:6px 14px;cursor:pointer;font-family:'Noto Sans TC',sans-serif;transition:all .2s;text-decoration:none;display:inline-flex;align-items:center;gap:5px}
+.back-btn:hover{color:var(--t2);border-color:var(--t5)}
+.bar-title{font-size:14px;font-weight:700;color:var(--red);letter-spacing:.5px}
+.bar-sub{font-size:12px;color:var(--t5)}
+
+/* HEADER */
+.header{padding:28px 24px 0;max-width:1040px;margin:0 auto}
+.header-inner{display:flex;align-items:flex-start;justify-content:space-between;flex-wrap:wrap;gap:16px;margin-bottom:20px}
+.header-left{}
+.accent-bar{width:4px;height:28px;background:var(--red);border-radius:2px;display:inline-block;vertical-align:middle;margin-right:10px}
+.h1{font-size:22px;font-weight:700;letter-spacing:-.02em;display:inline}
+.h-sub{color:var(--t3);font-size:13px;margin-top:4px;padding-left:14px}
+.tabs{display:flex;gap:8px;flex-wrap:wrap}
+.tab-btn{padding:7px 16px;border-radius:6px;cursor:pointer;font-size:13px;font-weight:500;border:1px solid var(--border);background:transparent;color:var(--t3);transition:all .2s;font-family:'Noto Sans TC',sans-serif}
+.tab-btn:hover{border-color:var(--t5);color:var(--t2)}
+.tab-btn.active{background:var(--red);color:#fff;border-color:var(--red)}
+.tab-btn.report-active{background:rgba(30,58,95,.6);color:#93c5fd;border-color:var(--blue)}
+
+/* KPI ROW */
+.kpi-row{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:20px}
+.kpi{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:12px 16px}
+.kpi-period{color:var(--t3);font-size:11px;letter-spacing:.05em;margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.kpi-yr-tag{font-family:var(--mono);font-size:9px;font-weight:700;background:rgba(255,255,255,.06);border:1px solid var(--border);border-radius:3px;padding:1px 5px;color:var(--t5);letter-spacing:.03em}
+.kpi-yr-tag[data-year="2026"]{background:rgba(240,168,48,.22);border-color:rgba(240,168,48,.5);color:var(--gold)}
+.kpi-yr-tag[data-year="2025"]{background:rgba(58,123,213,.2);border-color:rgba(58,123,213,.45);color:#93c5fd}
+
+/* TENANT BADGE & ROW TINT */
+.tenant-tag{font-family:'Noto Sans TC',sans-serif;font-size:10px;font-weight:700;padding:1px 7px;border-radius:4px;margin-left:6px;letter-spacing:.03em;display:inline-block}
+.tenant-tag[data-tenant="酷樂邦"]{background:rgba(20,184,166,.22);color:#5eead4;border:1px solid rgba(20,184,166,.5)}
+.tenant-tag[data-tenant="水產街"]{background:rgba(14,165,233,.22);color:#7dd3fc;border:1px solid rgba(14,165,233,.5)}
+tr.tenant-row-酷樂邦{background:rgba(20,184,166,.05)}
+tr.tenant-row-水產街{background:rgba(14,165,233,.05)}
+.kpi-val{font-family:var(--mono);font-size:17px;font-weight:700;color:var(--t1)}
+.kpi-footer{display:flex;justify-content:space-between;margin-top:8px}
+.kpi-usage{color:var(--t4);font-size:12px}
+.kpi-diff{font-size:12px;font-weight:600}
+.kpi-diff.up{color:#ef4444}
+.kpi-diff.dn{color:var(--green)}
+
+/* CONTENT */
+.content{max-width:1040px;margin:0 auto;padding:0 24px}
+.panel{display:none}
+.panel.active{display:block}
+
+/* CARD */
+.card{background:var(--bg2);border:1px solid var(--border);border-radius:12px;padding:20px;margin-bottom:16px}
+.card-title{font-size:14px;font-weight:600;color:var(--t2);margin-bottom:14px}
+
+/* CHART WRAP */
+.chart-wrap{position:relative;width:100%;margin-bottom:4px}
+
+/* MONTH PICKER */
+.month-pick{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;align-items:center}
+.m-btn{padding:5px 12px;border-radius:6px;cursor:pointer;font-size:13px;border:1px solid var(--border);background:transparent;color:var(--t3);font-family:'Noto Sans TC',sans-serif;transition:all .2s;display:flex;flex-direction:column;align-items:center;gap:1px;line-height:1.2}
+.m-btn.sel{background:#1e3a5f;border-color:var(--blue);color:#93c5fd}
+.m-btn:not(.sel):hover{border-color:var(--t5);color:var(--t2)}
+.m-yr{font-size:9px;font-family:var(--mono);letter-spacing:.03em;padding:0 4px;border-radius:2px;font-weight:700}
+.m-yr[data-year="2026"]{background:rgba(240,168,48,.2);color:var(--gold)}
+.m-yr[data-year="2025"]{background:rgba(58,123,213,.18);color:#93c5fd}
+.m-btn.sel .m-yr{filter:brightness(1.15)}
+.m-year-div{width:1px;height:32px;background:var(--border);margin:0 4px;flex-shrink:0}
+
+/* GRID 2COL */
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+
+/* PROGRESS BAR */
+.pbar-item{margin-bottom:10px}
+.pbar-lbl{display:flex;justify-content:space-between;font-size:12px;margin-bottom:4px}
+.pbar-name{color:var(--t2)}
+.pbar-pct{font-family:var(--mono)}
+.pbar-bg{background:#1e293b;border-radius:4px;height:6px}
+.pbar-fill{height:100%;border-radius:4px;transition:width .5s ease}
+
+/* KPI SPOTS */
+.spot-list{display:grid;gap:12px}
+.spot{display:flex;gap:12px;align-items:flex-start}
+.spot-dot{width:7px;height:7px;border-radius:50%;flex-shrink:0;margin-top:5px}
+.spot-lbl{font-size:12px;color:var(--t2)}
+.spot-val{font-size:13px;font-weight:600;color:var(--t1);font-family:var(--mono)}
+.spot-sub{font-size:11px;color:var(--t4)}
+
+/* TABLE */
+.tbl-wrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{text-align:left;color:var(--t4);font-size:11px;letter-spacing:.05em;padding:8px 12px;border-bottom:1px solid var(--border);font-weight:500}
+td{padding:8px 12px;border-bottom:1px solid var(--border2)}
+tr:hover td{background:rgba(255,255,255,.02)}
+.mono{font-family:var(--mono)}
+.tr{text-align:right}
+.highlight-row td{border-left:3px solid var(--red)}
+.highlight-row td:first-child{color:#fca5a5;font-weight:600}
+td:not(.highlight-row td){border-left:3px solid transparent}
+.pct-badge{display:inline-block;padding:2px 8px;border-radius:4px;font-size:11px;background:#1e293b;color:var(--t3);font-family:var(--mono)}
+
+/* ─── REPORT ─── */
+.rpt{max-width:800px;margin:0 auto}
+.rpt-cover{background:linear-gradient(135deg,#131921,#0d1117);border:1px solid var(--border);border-radius:12px;padding:28px;margin-bottom:24px;position:relative;overflow:hidden}
+.rpt-cover::before{content:'';position:absolute;top:0;right:0;width:220px;height:220px;background:radial-gradient(circle at 80% 20%,rgba(232,82,42,.08),transparent 70%);pointer-events:none}
+.rpt-eyebrow{font-size:11px;color:var(--t5);letter-spacing:.1em;margin-bottom:8px}
+.rpt-h{font-size:21px;font-weight:700;color:var(--t1);margin-bottom:4px}
+.rpt-meta{font-size:13px;color:var(--t3);margin-bottom:20px}
+.rpt-kpis{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.rpt-kpi{background:rgba(255,255,255,.03);border:1px solid var(--border);border-radius:8px;padding:10px 14px}
+.rpt-kpi-lbl{font-size:11px;color:var(--t4);margin-bottom:4px}
+.rpt-kpi-val{font-size:16px;font-weight:700;font-family:var(--mono)}
+
+.section{margin-bottom:28px}
+.sec-hdr{display:flex;align-items:center;gap:10px;margin-bottom:14px}
+.sec-tag{color:#fff;font-size:11px;font-weight:700;padding:2px 8px;border-radius:4px;letter-spacing:.05em;flex-shrink:0}
+.sec-title{font-size:15px;font-weight:700;color:var(--t1)}
+
+.insight{background:var(--bg2);border:1px solid rgba(255,255,255,.06);border-radius:8px;padding:14px 16px;margin-bottom:12px}
+.insight-hdr{display:flex;align-items:center;gap:8px;margin-bottom:6px}
+.insight-icon{font-size:15px}
+.insight-title{font-size:13px;font-weight:700;color:var(--t1)}
+.insight-body{font-size:13px;color:var(--t2);line-height:1.85}
+
+.pill{display:inline-block;padding:1px 8px;border-radius:4px;font-size:11px;font-weight:600;font-family:var(--mono);margin-right:4px}
+
+.tbl-sec{background:var(--bg3);border-radius:8px;overflow:hidden}
+.tbl-sec-hdr{display:grid;padding:8px 14px;border-bottom:1px solid var(--border)}
+.tbl-sec-row{display:grid;padding:9px 14px;border-bottom:1px solid var(--bg2)}
+
+.rec-item{display:flex;gap:14px;margin-bottom:14px;background:var(--bg2);border-radius:8px;padding:14px 16px}
+.rec-num{width:24px;height:24px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;margin-top:1px}
+.rec-title{font-size:13px;font-weight:700;color:var(--t1);margin-bottom:6px}
+.rec-body{font-size:13px;color:var(--t2);line-height:1.8}
+
+.rpt-closing{background:rgba(58,123,213,.05);border:1px solid #1e3a5f;border-radius:10px;padding:16px 20px;margin-bottom:8px}
+.rpt-closing-lbl{font-size:11px;color:var(--blue);letter-spacing:.08em;margin-bottom:6px;font-weight:600}
+.rpt-closing-body{font-size:13px;color:var(--t2);line-height:1.85}
+.rpt-credit{text-align:center;font-size:11px;color:var(--t5);margin-top:12px;padding-bottom:8px}
+
+.footer-note{text-align:center;font-size:11px;color:var(--t5);margin-top:20px}
+
+/* RWD */
+@media(max-width:640px){
+  .content,.header{padding-left:14px;padding-right:14px}
+  .kpi-row{grid-template-columns:1fr}
+  .g2{grid-template-columns:1fr}
+  .rpt-kpis{grid-template-columns:1fr 1fr}
+  .tabs{gap:6px}
+  .tab-btn{padding:6px 12px;font-size:12px}
+}
+</style>
+</head>
+<body>
+
+<!-- BACK BAR -->
+<div class="back-bar">
+  <button class="back-btn" onclick="location.href='index.html'">← 返回</button>
+  <span class="bar-title">電力分析表</span>
+  <span class="bar-sub">漁人町業務系統</span>
+</div>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="header-inner">
+    <div class="header-left">
+      <div style="margin-bottom:4px">
+        <span class="accent-bar"></span>
+        <span class="h1">漁人町 電力分析表</span>
+      </div>
+      <div class="h-sub">2025/04/26 ～ 2026/07/25　共十二期帳單（02–03月帳單缺漏）</div>
+    </div>
+    <div class="tabs">
+      <button class="tab-btn active" onclick="switchTab('overview',this)">總覽</button>
+      <button class="tab-btn" onclick="switchTab('trend',this)">趨勢</button>
+      <button class="tab-btn" onclick="switchTab('detail',this)">明細</button>
+      <button class="tab-btn" onclick="switchTab('tenant',this)">承租戶應收電費</button>
+      <button class="tab-btn" onclick="switchTab('report',this)" id="tab-report">📋 季度分析書</button>
+    </div>
+  </div>
+
+  <!-- KPI ROW -->
+  <div class="kpi-row" id="kpi-row"></div>
+</div>
+
+<!-- CONTENT -->
+<div class="content">
+
+  <!-- OVERVIEW -->
+  <div class="panel active" id="panel-overview">
+    <div class="card">
+      <div class="card-title">各項目費用比較</div>
+      <div class="month-pick" id="month-pick"></div>
+      <div class="chart-wrap" style="height:280px">
+        <canvas id="barChart"></canvas>
+      </div>
+    </div>
+    <div class="g2">
+      <div class="card">
+        <div class="card-title" id="pbar-title">費用佔比（最新期）</div>
+        <div id="pbar-list"></div>
+      </div>
+      <div class="card">
+        <div class="card-title">重點觀察</div>
+        <div class="spot-list" id="spot-list"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- TREND -->
+  <div class="panel" id="panel-trend">
+    <div class="card">
+      <div class="card-title">電費總計趨勢</div>
+      <div class="chart-wrap" style="height:200px"><canvas id="trendTotal"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">主要項目費用趨勢</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="trendItems"></canvas></div>
+    </div>
+    <div class="card">
+      <div class="card-title">主要項目用電度數趨勢</div>
+      <div class="chart-wrap" style="height:220px"><canvas id="trendUsage"></canvas></div>
+    </div>
+  </div>
+
+  <!-- DETAIL -->
+  <div class="panel" id="panel-detail"></div>
+
+  <!-- TENANT RECEIVABLE -->
+  <div class="panel" id="panel-tenant">
+    <div class="card" style="border-left:3px solid #14b8a6">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:16px;flex-wrap:wrap;gap:12px">
+        <div>
+          <div class="card-title" style="margin:0 0 4px 0;color:#5eead4;font-size:16px">酷樂邦農漁冷鏈實業股份有限公司</div>
+          <div style="font-size:12px;color:var(--t3)">分租電錶月度應收電費追蹤　｜　依帳單原始金額，無加成</div>
+        </div>
+        <div><span class="tenant-tag" data-tenant="酷樂邦" style="font-size:12px;padding:3px 10px">酷樂邦</span></div>
+      </div>
+      <div id="tenant-summary" class="kpi-row" style="grid-template-columns:repeat(3,1fr)"></div>
+    </div>
+
+    <div class="card">
+      <div class="card-title">月度應收明細</div>
+      <div id="tenant-table" class="tbl-wrap"></div>
+    </div>
+
+    <div class="g2">
+      <div class="card">
+        <div class="card-title">外展A · 月度趨勢</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="trendZhanA"></canvas></div>
+      </div>
+      <div class="card">
+        <div class="card-title">船池機房 · 月度趨勢</div>
+        <div class="chart-wrap" style="height:220px"><canvas id="trendChuanChi"></canvas></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- REPORT -->
+  <div class="panel" id="panel-report">
+    <div class="rpt">
+      <!-- cover -->
+      <div class="rpt-cover">
+        <div class="rpt-eyebrow">ANNUAL ELECTRICITY REPORT · 漁人町</div>
+        <div class="rpt-h">電力費用年度分析書</div>
+        <div class="rpt-meta">計費區間：2025 / 04 / 26 ～ 2026 / 07 / 25　｜　共十二期帳單（02–03月缺漏）　｜　夏季 $5.5 / 度・非夏季 $5.3 / 度（05月舊費率 $4.0）</div>
+        <div class="rpt-kpis">
+          <div class="rpt-kpi"><div class="rpt-kpi-lbl">十二期合計</div><div class="rpt-kpi-val" style="color:var(--red)">$3,591,446</div></div>
+          <div class="rpt-kpi"><div class="rpt-kpi-lbl">全期最高月</div><div class="rpt-kpi-val" style="color:var(--red)">$513,667</div></div>
+          <div class="rpt-kpi"><div class="rpt-kpi-lbl">全期最低月</div><div class="rpt-kpi-val" style="color:var(--green)">$159,068</div></div>
+          <div class="rpt-kpi"><div class="rpt-kpi-lbl">空調ACMP1峰值</div><div class="rpt-kpi-val" style="color:var(--gold)">$220,264</div></div>
+        </div>
+      </div>
+
+      <!-- 01 趨勢 -->
+      <div class="section">
+        <div class="sec-hdr"><span class="sec-tag" style="background:var(--blue)">01</span><span class="sec-title">整體電費趨勢</span></div>
+        <p style="font-size:13px;color:var(--t2);line-height:1.85;margin-bottom:14px">八期帳單橫跨非夏季（舊費率 $4.0）→ 夏季（$5.5）→ 非夏季（$5.3）三個費率區間。整體走勢呈現「<strong style="color:var(--gold)">夏季持續攀升 → 09月全期高峰 → 費率切換後迅速收斂</strong>」格局，空調系統與費率雙重驅動為主要變數。</p>
+        <div class="tbl-wrap tbl-sec">
+          <div class="tbl-sec-hdr" style="grid-template-columns:2fr 1fr 1fr 2fr">
+            <span style="font-size:11px;color:var(--t4)">計費期間</span><span style="font-size:11px;color:var(--t4)">電費合計</span><span style="font-size:11px;color:var(--t4)">環比</span><span style="font-size:11px;color:var(--t4)">主要原因</span>
+          </div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 2fr;background:rgba(232,82,42,.06)">
+            <span style="font-size:13px;color:#fca5a5;font-weight:600"><span class="kpi-yr-tag" data-year="2026">2026</span>06/26–07/25 ★全期最高</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$513,667</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">↑ 0.1%</span><span style="font-size:12px;color:var(--t3)">夏季用電進入平台期，廣告燈異常 +55%</span>
+          </div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 2fr">
+            <span style="font-size:13px;color:var(--t2)"><span class="kpi-yr-tag" data-year="2026">2026</span>05/26–06/25</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$513,345</span><span style="font-size:13px;font-family:var(--mono);color:var(--red)">↑ 21.0%</span><span style="font-size:12px;color:var(--t3)">夏季費率首月，空調破 40k 度，船池機房 🆕、110V ⋯斷點</span>
+          </div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 2fr">
+            <span style="font-size:13px;color:var(--t2)"><span class="kpi-yr-tag" data-year="2026">2026</span>04/26–05/25</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$424,123</span><span style="font-size:13px;font-family:var(--mono);color:var(--gold)">↑ 10.7%</span><span style="font-size:12px;color:var(--t3)">全廠用電同步上升，外展A首次啟用</span>
+          </div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 2fr">
+            <span style="font-size:13px;color:var(--t2)"><span class="kpi-yr-tag" data-year="2026">2026</span>03/26–04/25</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$383,158</span><span style="font-size:13px;font-family:var(--mono);color:var(--gold)">↑ 139.7%</span><span style="font-size:12px;color:var(--t3)">空調用電結構轉變（28,608度），整體電費跳升</span>
+          </div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 2fr">
+            <span style="font-size:13px;color:var(--t2)"><span class="kpi-yr-tag" data-year="2026">2026</span>12/26–01/25</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$159,821</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">↑ 0.5%</span><span style="font-size:12px;color:var(--t3)">水產街微增，整體持平</span>
+          </div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 2fr">
+            <span style="font-size:13px;color:var(--t2)"><span class="kpi-yr-tag" data-year="2025">2025</span>11/26–12/25</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$159,068</span><span style="font-size:13px;font-family:var(--mono);color:var(--green)">↓ 18.5%</span><span style="font-size:12px;color:var(--t3)">空調 & 警衛室用電大幅收斂</span>
+          </div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 2fr">
+            <span style="font-size:13px;color:var(--t2)"><span class="kpi-yr-tag" data-year="2025">2025</span>10/26–11/25</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$195,189</span><span style="font-size:13px;font-family:var(--mono);color:var(--green)">↓ 37.6%</span><span style="font-size:12px;color:var(--t3)">費率轉非夏季 $5.3/度，空調大幅收斂</span>
+          </div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 2fr;background:rgba(232,82,42,.03)">
+            <span style="font-size:13px;color:var(--t2)"><span class="kpi-yr-tag" data-year="2025">2025</span>08/26–09/25 ★去年夏季峰值</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$312,566</span><span style="font-size:13px;font-family:var(--mono);color:var(--red)">↑ 13.9%</span><span style="font-size:12px;color:var(--t3)">水產街電錶首次獨立計費 $68,354</span>
+          </div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 2fr;background:rgba(240,168,48,.03)">
+            <span style="font-size:13px;color:var(--t2)"><span class="kpi-yr-tag" data-year="2025">2025</span>07/26–08/25</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$274,200</span><span style="font-size:13px;font-family:var(--mono);color:var(--red)">↑ 8.4%</span><span style="font-size:12px;color:var(--t3)">空調尖峰 17,216度，全期最高用電量</span>
+          </div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 2fr">
+            <span style="font-size:13px;color:var(--t2)"><span class="kpi-yr-tag" data-year="2025">2025</span>06/26–07/25</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$253,013</span><span style="font-size:13px;font-family:var(--mono);color:var(--red)">↑ 18.6%</span><span style="font-size:12px;color:var(--t3)">高溫全力運轉，空調 13,760度</span>
+          </div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 2fr">
+            <span style="font-size:13px;color:var(--t2)"><span class="kpi-yr-tag" data-year="2025">2025</span>05/26–06/25</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$213,358</span><span style="font-size:13px;font-family:var(--mono);color:var(--red)">↑ 12.3%</span><span style="font-size:12px;color:var(--t3)">進入夏季費率 $5.5/度，空調快速上升</span>
+          </div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 2fr">
+            <span style="font-size:13px;color:var(--t2)"><span class="kpi-yr-tag" data-year="2025">2025</span>04/26–05/25</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$189,938</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">—</span><span style="font-size:12px;color:var(--t3)">非夏季舊費率 $4.0/度，空調 11,872度</span>
+          </div>
+        </div>
+      </div>
+
+      <!-- 02 關鍵分析 -->
+      <div class="section">
+        <div class="sec-hdr"><span class="sec-tag" style="background:var(--gold)">02</span><span class="sec-title">關鍵用電節點解析</span></div>
+        <div class="insight" style="border-left:3px solid var(--blue)">
+          <div class="insight-hdr"><span class="insight-icon">❄️</span><span class="insight-title">空調 ACMP1 — 夏季尖峰 / 冬季驟降，年度落差最大</span></div>
+          <div class="insight-body">用電量由 05月的 <span class="pill" style="background:rgba(240,168,48,.15);color:var(--gold)">11,872度 ($47,488)</span> 持續攀升至 08月尖峰 <span class="pill" style="background:rgba(232,82,42,.15);color:var(--red)">17,216度 ($94,688)</span>，隨後在費率切換後驟降至 01月的 <span class="pill" style="background:rgba(34,197,94,.12);color:var(--green)">592度 ($3,138)</span>。從尖峰到最低點降幅達 <strong style="color:var(--green)">97%</strong>，是全期電費波動的第一主因。<br><br>⚠️ <strong style="color:var(--gold)">前瞻提醒：</strong>對照去年數據，6月起夏季費率重啟，空調月費預估將再度攀升至 $60,000–$95,000，建議在夏季前完成保養與濾網清潔，並評估智慧溫控方案。</div>
+        </div>
+        <div class="insight" style="border-left:3px solid var(--red)">
+          <div class="insight-hdr"><span class="insight-icon">🏪</span><span class="insight-title">水產街電錶★ — 09月首次獨立計費，成本結構大幅改變</span></div>
+          <div class="insight-body">09月帳單首次出現水產街電錶★獨立項目（12,428度 / $68,354），佔當月電費 <strong style="color:var(--t1)">21.9%</strong>。此後持續作為全場最大單一耗電節點，冬季佔比更逆勢攀升至 <strong style="color:var(--red)">39.6%</strong>（01月）：<span class="pill" style="background:rgba(148,163,184,.1);color:var(--t2)">09月：$68,354</span><span class="pill" style="background:rgba(148,163,184,.1);color:var(--t2)">11月：$58,433</span><span class="pill" style="background:rgba(148,163,184,.1);color:var(--t2)">12月：$57,373</span><span class="pill" style="background:rgba(232,82,42,.15);color:var(--red)">01月：$63,245 ↑</span><br>冬季用電不降反升，建議釐清現行電費是否按比例向攤商分攤，避免管理方長期承擔隱性成本。</div>
+        </div>
+        <div class="insight" style="border-left:3px solid var(--green)">
+          <div class="insight-hdr"><span class="insight-icon">🏠</span><span class="insight-title">漁人町手抄（警衛室）— 冬季持續遞減，幅度超出預期</span></div>
+          <div class="insight-body">夏季用電維持 5,000–5,400度高檔，進入秋冬後連續下降：<span class="pill" style="background:rgba(34,197,94,.1);color:var(--green)">11月：4,718度</span> → <span class="pill" style="background:rgba(34,197,94,.1);color:var(--green)">12月：3,893度</span> → <span class="pill" style="background:rgba(34,197,94,.1);color:var(--green)">01月：2,800度</span>，冬季三期降幅達 41%，略超出氣溫影響的合理預期，建議現場確認是否有設備調整或量表異常。</div>
+        </div>
+        <div class="insight" style="border-left:3px solid var(--purple)">
+          <div class="insight-hdr"><span class="insight-icon">💡</span><span class="insight-title">哈魚碼頭(B廠區) — 09月後度數結構性下降（水產街拆表）</span></div>
+          <div class="insight-body">05–08月哈魚碼頭度數維持 21,000–23,600度，09月起降至 19,572度，此後冬季進一步收斂至 10,000–12,600度。需注意：09月起水產街電錶獨立計費前，水產街用電包含於哈魚碼頭總表內，<strong style="color:var(--t1)">跨期比較時需留意口徑差異</strong>。照明1L1 全期穩定維持 1,100–1,500度，為基準對照線。</div>
+        </div>
+      </div>
+
+      <!-- 03 佔比 -->
+      <div class="section">
+        <div class="sec-hdr"><span class="sec-tag" style="background:var(--purple)">03</span><span class="sec-title">各計費節點費用佔比彙整（最新期 12/26–01/25）</span></div>
+        <div class="tbl-wrap tbl-sec">
+          <div class="tbl-sec-hdr" style="grid-template-columns:2fr 1fr 1fr 1fr">
+            <span style="font-size:11px;color:var(--t4)">項目</span><span style="font-size:11px;color:var(--t4)">度數</span><span style="font-size:11px;color:var(--t4)">費用</span><span style="font-size:11px;color:var(--t4)">佔比</span>
+          </div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 1fr;border-left:3px solid var(--red);background:rgba(232,82,42,.06)"><span style="font-size:13px;color:#fca5a5;font-weight:600">水產街電錶★</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">11,933</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$63,245</span><span style="font-size:13px;font-family:var(--mono);color:var(--red);font-weight:700">39.6%</span></div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 1fr;border-left:3px solid transparent"><span style="font-size:13px;color:var(--t2)">哈魚碼頭(B廠區)</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">10,998</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$58,289</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">36.5%</span></div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 1fr;border-left:3px solid transparent"><span style="font-size:13px;color:var(--t2)">漁人町手抄(警衛室)</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">2,800</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$14,840</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">9.3%</span></div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 1fr;border-left:3px solid transparent"><span style="font-size:13px;color:var(--t2)">外展B</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">1,827</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$9,683</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">6.1%</span></div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 1fr;border-left:3px solid transparent"><span style="font-size:13px;color:var(--t2)">照明1L1</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">1,291</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$6,842</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">4.3%</span></div>
+          <div class="tbl-sec-row" style="grid-template-columns:2fr 1fr 1fr 1fr;border-left:3px solid transparent"><span style="font-size:13px;color:var(--t2)">其他合計</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">—</span><span style="font-size:13px;font-family:var(--mono);color:var(--t1)">$6,922</span><span style="font-size:13px;font-family:var(--mono);color:var(--t3)">4.3%</span></div>
+        </div>
+      </div>
+
+      <!-- 04 建議 -->
+      <div class="section">
+        <div class="sec-hdr"><span class="sec-tag" style="background:var(--green)">04</span><span class="sec-title">後續營運建議</span></div>
+        <div class="rec-item" style="border-left:3px solid var(--gold)">
+          <div class="rec-num" style="background:rgba(240,168,48,.18);color:var(--gold)">!</div>
+          <div><div class="rec-title">空調 ACMP1 用電進入平台期，仍需監控</div><div class="rec-body">連續五月變化軌跡：04月 28,608度 → 05月 32,640度 → 06月 40,048度 → <strong style="color:var(--gold)">07月 39,760度 $218,680（首次月降 -0.7%）</strong>。06、07月連續兩月維持 40k 度量級但未再創新高，可視為新常態基線。夏季餘下 8–9月為觀察重點，若能維持此水位而非續升，本年度夏季壓力可控。建議延續原策略：① 委請空調維護廠商完成全面性檢查與濾網清潔；② 執行離峰時段預冷、夜間排程；③ 8月起評估是否進一步移除◆注意標記。<br><br><span style="display:inline-block;padding:8px 12px;background:rgba(58,123,213,.08);border-left:2px solid var(--blue);border-radius:4px;font-size:12.5px;color:var(--t3);margin-top:6px"><strong style="color:#93c5fd">📌 旁註：07月全廠用電結構觀察</strong><br>與 06月相比，全廠出現「有升有降」而非齊步上升的訊號：哈魚碼頭 -1.8%、空調 -0.7%、船池機房 -41%（自然回落）；但漁人町手抄 +10.1%、外展B +26.6%、水產街 +2.8%、廣告燈 +55%（異常）。整體平台化，但個別項目仍需觀察。</span></div></div>
+        </div>
+        <div class="rec-item" style="border-left:3px solid var(--red)">
+          <div class="rec-num" style="background:rgba(232,82,42,.2);color:var(--red)">1</div>
+          <div><div class="rec-title">水產街成本結構釐清（優先處理）</div><div class="rec-body">水產街電錶自 09 月獨立計費後，冬季佔比持續攀升至近 40%，且呈逆勢成長趨勢。<strong style="color:#fca5a5">連續三月加速：04月 $93,858 → 05月 $101,495 → 06月 $121,688</strong>，累計已達 $317,041。建議確認現行租約對電費的分攤依據，中長期可引入子電錶進行精細化管理，避免管理方長期承擔隱性成本。</div></div>
+        </div>
+        <div class="rec-item" style="border-left:3px solid #a855f7">
+          <div class="rec-num" style="background:rgba(168,85,247,.2);color:#a855f7">2</div>
+          <div><div class="rec-title">📋 船池機房 錶號狀況查核</div><div class="rec-body">06月首次出現的「船池機房」電錶，07月數據回落：<strong style="color:#c084fc">06月 1,975度 / $10,863 → 07月 1,158度 / $6,369（-41%）</strong>。可能為 06月啟用初期滿載測試、07月進入正常運作模式，或設備使用頻率調整。<br><br>此電錶已確認歸屬承租戶「酷樂邦農漁冷鏈實業股份有限公司」，屬<strong style="color:#c084fc">分租錶</strong>。已在「承租戶應收電費」分頁獨立追蹤（截至 07月累計 $17,232）。仍建議向台中市魚市場推廣課發文確認：① 電錶正式啟用日期；② 用電歸屬範圍。</div></div>
+        </div>
+        <div class="rec-item" style="border-left:3px solid #a855f7">
+          <div class="rec-num" style="background:rgba(168,85,247,.2);color:#a855f7">3</div>
+          <div><div class="rec-title">📋 水舞舞台 110V/220V 錶號體系查核</div><div class="rec-body">水舞舞台 110V 錶自 2026/06月起連續兩月從帳單消失（此前每月穩定 22–363 度）。同時 220V 錶度數在 07月異常暴增：<strong style="color:#c084fc">06月 22度 / $121 → 07月 80度 / $440（+263%）</strong>。<br><br>兩者可能存在錶號整併或負載重分配關係，但實際情況待確認，故獨立列舉便於回溯：<br>
+          <div style="display:grid;grid-template-columns:1fr 1fr;gap:8px;font-family:var(--mono);font-size:12px;margin-top:8px">
+            <div style="background:var(--bg1);padding:8px;border-radius:4px"><div style="color:var(--t4);font-size:10px;margin-bottom:3px">水舞舞台 110V</div><div style="color:var(--t2)">05月 327度 $1,733<br>06–07月 <span style="color:#a3a3a3">⋯ 斷點</span></div></div>
+            <div style="background:var(--bg1);padding:8px;border-radius:4px"><div style="color:var(--t4);font-size:10px;margin-bottom:3px">水舞舞台 220V</div><div style="color:var(--t2)">05月 55度 $292<br>06月 22度 $121<br><strong style="color:#c084fc">07月 80度 $440</strong></div></div>
+          </div>
+          <br>建議發文查證：① 110V 錶是否被移除／併入 220V？② 220V 度數突增是否為承接 110V 負載？③ 錶號變動生效日？未釐清前依帳單原樣入帳，備註「錶號變動待確認」。</div></div>
+        </div>
+        <div class="rec-item" style="border-left:3px solid var(--red)">
+          <div class="rec-num" style="background:rgba(232,82,42,.2);color:var(--red)">4</div>
+          <div><div class="rec-title">🔥 夏季用電推估｜實測 vs 預估對照（延伸 08、09 月）</div><div class="rec-body">先前預估 07月 $525k–$580k 區間，實測落點 <strong style="color:var(--green)">$513,667，較樂觀情境下緣還低 2.2%</strong>，顯示夏季用電未如原先擔憂持續攀升，而是進入平台期。以 07月為新基準，延伸推估 08、09 月：<br><br>
+          <div style="overflow-x:auto"><table style="width:100%;font-size:12px;margin-top:8px">
+            <thead><tr style="background:var(--bg1)">
+              <th style="text-align:left;padding:8px;color:var(--t4)">月份</th>
+              <th style="text-align:left;padding:8px;color:var(--t4)">情境</th>
+              <th style="text-align:right;padding:8px;color:var(--t4)">推估月費</th>
+              <th style="text-align:right;padding:8px;color:var(--t4)">實測</th>
+              <th style="text-align:left;padding:8px;color:var(--t4)">結果</th>
+            </tr></thead>
+            <tbody>
+              <tr><td style="padding:8px;font-weight:700">2026/06月</td><td style="padding:8px;color:var(--t3)">基準</td><td class="mono" style="padding:8px;text-align:right;color:var(--t3)">—</td><td class="mono" style="padding:8px;text-align:right;color:var(--t1);font-weight:700">$513,345</td><td style="padding:8px;color:var(--t4)">首月基準</td></tr>
+              <tr style="background:rgba(34,197,94,.06)"><td style="padding:8px;font-weight:700">2026/07月</td><td style="padding:8px;color:var(--t3)">樂觀 (原預估)</td><td class="mono" style="padding:8px;text-align:right;color:var(--gold)">$525k</td><td class="mono" style="padding:8px;text-align:right;color:var(--green);font-weight:700">$513,667</td><td style="padding:8px;color:var(--green)">✓ 低於預估 2.2%</td></tr>
+              <tr><td style="padding:8px;font-weight:700" rowspan="2">2026/08月<br><span style="font-weight:400;font-size:10px;color:var(--t4)">最熱月</span></td><td style="padding:8px;color:var(--t3)">平緩情境 (空調 ~40k)</td><td class="mono" style="padding:8px;text-align:right;color:var(--gold)">$510–520k</td><td class="mono" style="padding:8px;text-align:right;color:var(--t4)">待實測</td><td style="padding:8px;color:var(--t4)">若延續 07月趨勢</td></tr>
+              <tr><td style="padding:8px;color:var(--t3)">上行情境 (空調 42–45k)</td><td class="mono" style="padding:8px;text-align:right;color:#fca5a5">$530–555k</td><td class="mono" style="padding:8px;text-align:right;color:var(--t4)">待實測</td><td style="padding:8px;color:var(--t4)">若 8月比 6–7月更熱</td></tr>
+              <tr><td style="padding:8px;font-weight:700" rowspan="2">2026/09月<br><span style="font-weight:400;font-size:10px;color:var(--t4)">夏季末月</span></td><td style="padding:8px;color:var(--t3)">回落情境 (空調 ~35–38k)</td><td class="mono" style="padding:8px;text-align:right;color:var(--green)">$480–500k</td><td class="mono" style="padding:8px;text-align:right;color:var(--t4)">待實測</td><td style="padding:8px;color:var(--t4)">中下旬轉涼</td></tr>
+              <tr><td style="padding:8px;color:var(--t3)">高溫延續 (空調 ~40k)</td><td class="mono" style="padding:8px;text-align:right;color:var(--gold)">$510–520k</td><td class="mono" style="padding:8px;text-align:right;color:var(--t4)">待實測</td><td style="padding:8px;color:var(--t4)">與 07月接近</td></tr>
+              <tr style="border-top:2px solid var(--border);background:rgba(58,123,213,.04)"><td colspan="2" style="padding:8px;font-weight:700;color:#93c5fd">夏季合計推估 (6–9月)</td><td class="mono" style="padding:8px;text-align:right;color:#93c5fd;font-weight:700">$2.02M–$2.11M</td><td class="mono" style="padding:8px;text-align:right;color:var(--t4)">6+7月 $1.027M</td><td style="padding:8px;color:var(--t3);font-size:11px">已完成 51%</td></tr>
+            </tbody>
+          </table></div>
+          <br>建議：① 現金流管控依合計推估上緣 $2.11M 預留；② 8月是最熱月為夏季壓力測試點；③ 10月費率轉非夏季後預期回落至 $195k–$220k 水位；④ 若 08月實測超過 $555k，代表原「平台期」假設失敗，應啟動空調專項體檢。</div></div>
+        </div>
+        <div class="rec-item" style="border-left:3px solid var(--gold)">
+          <div class="rec-num" style="background:rgba(240,168,48,.2);color:var(--gold)">5</div>
+          <div><div class="rec-title">備戰夏季空調費用：對照去年數據超前規劃</div><div class="rec-body">去年 06–09 月空調費用由 $59,904 飆升至 $94,688。今年夏季應提前完成：①空調設備保養與濾網清潔；②大型設備排程最佳化；③評估智慧溫控或分時段節能方案，目標將夏季空調費控制在去年峰值以下。</div></div>
+        </div>
+        <div class="rec-item" style="border-left:3px solid var(--blue)">
+          <div class="rec-num" style="background:rgba(58,123,213,.2);color:var(--blue)">6</div>
+          <div><div class="rec-title">警衛室用電異常確認</div><div class="rec-body">警衛室冬季三期降幅達 41%，遠超氣溫影響的合理範圍。建議現場確認監視器主機、照明系統及其他常駐設備是否有異動，確保計費數字的準確性，並釐清是否有設備關閉或量表異常。</div></div>
+        </div>
+        <div class="rec-item" style="border-left:3px solid var(--green)">
+          <div class="rec-num" style="background:rgba(34,197,94,.2);color:var(--green)">7</div>
+          <div><div class="rec-title">建立年度電費基準線與預警機制</div><div class="rec-body">已有完整一年週期＋跨夏季數據：非夏季基準 $159k–$195k，2026 夏季平台期 $513k–$514k（06、07月連續兩月）。建議為各主要節點設定月度正常波動區間：① 空調 ACMP1 夏季 38k–42k 度、非夏季 <1k 度；② 廣告燈全年 150–200 度（07月 256度為異常）；③ 水產街電錶★ 夏季 20k–24k 度。任一項單月超出區間 ±15% 觸發現場查核。</div></div>
+        </div>
+      </div>
+
+      <div class="rpt-closing">
+        <div class="rpt-closing-lbl">結語</div>
+        <div class="rpt-closing-body">本年度十二期數據顯示，2026 夏季用電已呈現「<strong style="color:var(--gold)">高水位平台期</strong>」訊號：06、07 月連續兩月電費維持在 $513k 水準（$513,345 / $513,667），空調 ACMP1 首次月降 -0.7%，未如原推估持續飆升。夏季合計已完成 51%，全季推估 $2.02M–$2.11M。<br><br>然平台期並非解除警戒，07月出現三項新觀察點：① <strong style="color:#c084fc">廣告燈用電暴增 +55%</strong>（戶外照明理應穩定，需查核）；② <strong style="color:#c084fc">水舞舞台 220V 度數 +263%</strong> 疑與 110V 消失有錶號整併關係；③ 公設電費首見退補條目。建議下個月工作重點：待 08 月帳單驗證平台期假設，若實測 $555k 以內代表夏季壓力受控，可啟動空調節能方案評估；若超出則觸發專項體檢。</div>
+      </div>
+      <div class="rpt-credit">本報告資料來源：台中市魚市場股份有限公司公共費用帳單　｜　分析製作：漁人町管理部</div>
+    </div>
+  </div>
+
+  <div class="footer-note">★ 水產街電錶為重點監控項目　｜　資料來源：台中市魚市場股份有限公司帳單</div>
+</div>
+
+<script>
+/* ── DATA ── */
+const RAW = [
+  { period:"04/26–05/25", label:"05月", year:2025, total:189938,
+    items:[
+      {name:"哈魚碼頭(B廠區)",usage:23604,amt:94416},
+      {name:"水舞舞台110V",usage:407,amt:1628},
+      {name:"水舞舞台220V",usage:1201,amt:4804},
+      {name:"漁人町手抄(警衛室)",usage:5293,amt:21172},
+      {name:"廣告燈(環中路圍牆)",usage:318,amt:1272},
+      {name:"照明1L1",usage:1464,amt:5854},
+      {name:"空調ACMP1",usage:11872,amt:47488},
+      {name:"公設電費1R1",usage:null,amt:264},
+      {name:"外展B",usage:3260,amt:13040},
+    ]},
+  { period:"05/26–06/25", label:"06月", year:2025, total:213358,
+    items:[
+      {name:"哈魚碼頭(B廠區)",usage:23460,amt:105570},
+      {name:"水舞舞台110V",usage:330,amt:1485},
+      {name:"水舞舞台220V",usage:1060,amt:4770},
+      {name:"漁人町手抄(警衛室)",usage:4850,amt:21825},
+      {name:"廣告燈(環中路圍牆)",usage:298,amt:1341},
+      {name:"照明1L1",usage:1193,amt:5366},
+      {name:"空調ACMP1",usage:13312,amt:59904},
+      {name:"公設電費1R1",usage:null,amt:303},
+      {name:"外展B",usage:2843,amt:12794},
+    ]},
+  { period:"06/26–07/25", label:"07月", year:2025, total:253013,
+    items:[
+      {name:"哈魚碼頭(B廠區)",usage:21696,amt:119328},
+      {name:"水舞舞台110V",usage:293,amt:1612},
+      {name:"水舞舞台220V",usage:963,amt:5297},
+      {name:"漁人町手抄(警衛室)",usage:5289,amt:29090},
+      {name:"廣告燈(環中路圍牆)",usage:310,amt:1705},
+      {name:"照明1L1",usage:1147,amt:6306},
+      {name:"空調ACMP1",usage:13760,amt:75680},
+      {name:"公設電費1R1",usage:null,amt:355},
+      {name:"外展B",usage:2480,amt:13640},
+    ]},
+  { period:"07/26–08/25", label:"08月", year:2025, total:274200,
+    items:[
+      {name:"哈魚碼頭(B廠區)",usage:21690,amt:119295},
+      {name:"水舞舞台110V",usage:336,amt:1848},
+      {name:"水舞舞台220V",usage:1234,amt:6787},
+      {name:"漁人町手抄(警衛室)",usage:5423,amt:29827},
+      {name:"廣告燈(環中路圍牆)",usage:157,amt:864},
+      {name:"照明1L1",usage:1171,amt:6438},
+      {name:"空調ACMP1",usage:17216,amt:94688},
+      {name:"公設電費1R1",usage:null,amt:362},
+      {name:"外展B",usage:2562,amt:14091},
+    ]},
+  { period:"08/26–09/25", label:"09月", year:2025, total:312566,
+    items:[
+      {name:"哈魚碼頭(B廠區)",usage:19572,amt:107646},
+      {name:"水舞舞台110V",usage:301,amt:1656},
+      {name:"水舞舞台220V",usage:927,amt:5099},
+      {name:"漁人町手抄(警衛室)",usage:5028,amt:27654},
+      {name:"廣告燈(環中路圍牆)",usage:281,amt:1546},
+      {name:"照明1L1",usage:1127,amt:6199},
+      {name:"空調ACMP1",usage:14656,amt:80608},
+      {name:"公設電費1R1",usage:null,amt:373},
+      {name:"外展B",usage:2442,amt:13431},
+      {name:"水產街電錶★",usage:12428,amt:68354},
+    ]},
+  { period:"10/26–11/25", label:"11月", year:2025, total:195189,
+    items:[
+      {name:"哈魚碼頭(B廠區)",usage:12612,amt:66844},
+      {name:"水舞舞台110V",usage:298,amt:1579},
+      {name:"水舞舞台220V",usage:1065,amt:5645},
+      {name:"漁人町手抄(警衛室)",usage:4718,amt:25005},
+      {name:"廣告燈(環中路圍牆)",usage:258,amt:1367},
+      {name:"照明1L1",usage:1215,amt:6437},
+      {name:"空調ACMP1",usage:3936,amt:20861},
+      {name:"公設電費1R1",usage:null,amt:358},
+      {name:"外展B",usage:1634,amt:8660},
+      {name:"水產街電錶★",usage:11025,amt:58433},
+    ]},
+  { period:"11/26–12/25", label:"12月", year:2025, total:159068,
+    items:[
+      {name:"哈魚碼頭(B廠區)",usage:10266,amt:54410},
+      {name:"水舞舞台110V",usage:370,amt:1961},
+      {name:"水舞舞台220V",usage:719,amt:3811},
+      {name:"漁人町手抄(警衛室)",usage:3893,amt:20633},
+      {name:"廣告燈(環中路圍牆)",usage:320,amt:1696},
+      {name:"照明1L1",usage:1225,amt:6493},
+      {name:"空調ACMP1",usage:640,amt:3392},
+      {name:"公設電費1R1",usage:null,amt:326},
+      {name:"外展B",usage:1693,amt:8973},
+      {name:"水產街電錶★",usage:10825,amt:57373},
+    ]},
+  { period:"12/26–01/25", label:"01月", year:2026, total:159821,
+    items:[
+      {name:"哈魚碼頭(B廠區)",usage:10998,amt:58289},
+      {name:"水舞舞台110V",usage:359,amt:1903},
+      {name:"水舞舞台220V",usage:40,amt:212},
+      {name:"漁人町手抄(警衛室)",usage:2800,amt:14840},
+      {name:"廣告燈(環中路圍牆)",usage:266,amt:1410},
+      {name:"照明1L1",usage:1291,amt:6842},
+      {name:"空調ACMP1",usage:592,amt:3138},
+      {name:"公設電費1R1",usage:null,amt:259},
+      {name:"外展B",usage:1827,amt:9683},
+      {name:"水產街電錶★",usage:11933,amt:63245},
+    ]},
+  { period:"03/26–04/25", label:"04月", year:2026, total:383158,
+    items:[
+      {name:"哈魚碼頭(B廠區)",usage:16704,amt:88531},
+      {name:"水舞舞台110V",usage:363,amt:1924},
+      {name:"水舞舞台220V",usage:170,amt:901},
+      {name:"漁人町手抄(警衛室)",usage:5618,amt:29775},
+      {name:"廣告燈(環中路圍牆)",usage:162,amt:859},
+      {name:"照明1L1",usage:1223,amt:6479},
+      {name:"空調ACMP1",usage:28608,amt:151622},
+      {name:"公設電費1R1",usage:null,amt:300},
+      {name:"外展B",usage:1681,amt:8909},
+      {name:"水產街電錶★",usage:17709,amt:93858},
+    ]},
+  { period:"04/26–05/25", label:"05月", year:2026, total:424123,
+    items:[
+      {name:"哈魚碼頭(B廠區)",usage:18426,amt:97658},
+      {name:"水舞舞台110V",usage:327,amt:1733},
+      {name:"水舞舞台220V",usage:55,amt:292},
+      {name:"漁人町手抄(警衛室)",usage:5258,amt:27867},
+      {name:"廣告燈(環中路圍牆)",usage:160,amt:848},
+      {name:"照明1L1",usage:1165,amt:6172},
+      {name:"空調ACMP1",usage:32640,amt:172992},
+      {name:"公設電費1R1",usage:null,amt:287},
+      {name:"外展A 🆕",usage:1023,amt:5419},
+      {name:"外展B",usage:1766,amt:9360},
+      {name:"水產街電錶★",usage:19150,amt:101495},
+    ]},
+  { period:"05/26–06/25", label:"06月", year:2026, total:513345,
+    items:[
+      {name:"哈魚碼頭(B廠區)",usage:19974,amt:109857},
+      {name:"船池機房 🆕",usage:1975,amt:10863},
+      {name:"水舞舞台110V",usage:null,amt:null,discontinued:true},
+      {name:"水舞舞台220V",usage:22,amt:121},
+      {name:"漁人町手抄(警衛室)",usage:5327,amt:29299},
+      {name:"廣告燈(環中路圍牆)",usage:165,amt:908},
+      {name:"照明1L1",usage:1144,amt:6292},
+      {name:"空調ACMP1",usage:40048,amt:220264,notice:true},
+      {name:"公設電費1R1",usage:null,amt:313},
+      {name:"外展A",usage:1105,amt:6078},
+      {name:"外展B",usage:1393,amt:7662},
+      {name:"水產街電錶★",usage:22125,amt:121688},
+    ]},
+  { period:"06/26–07/25", label:"07月", year:2026, total:513667,
+    items:[
+      {name:"哈魚碼頭(B廠區)",usage:19608,amt:107844},
+      {name:"船池機房",usage:1158,amt:6369},
+      {name:"水舞舞台110V",usage:null,amt:null,discontinued:true},
+      {name:"水舞舞台220V",usage:80,amt:440},
+      {name:"漁人町手抄(警衛室)",usage:5867,amt:32269},
+      {name:"廣告燈(環中路圍牆)",usage:256,amt:1408,notice:true},
+      {name:"照明1L1",usage:1116,amt:6135},
+      {name:"空調ACMP1",usage:39760,amt:218680,notice:true},
+      {name:"公設電費1R1",usage:null,amt:282,note:"本期含 06月 $18 退補"},
+      {name:"外展A",usage:995,amt:5473},
+      {name:"外展B",usage:1763,amt:9697},
+      {name:"水產街電錶★",usage:22740,amt:125070},
+    ]},
+];
+const COLORS=["#e8522a","#f0a830","#3a7bd5","#22c55e","#a855f7","#ec4899","#14b8a6","#f97316","#64748b","#ef4444"];
+const MONTH_LABELS=RAW.map(d=>d.label);
+const CHART_LABELS=RAW.map(d=>`'${String(d.year).slice(2)} ${d.label}`);
+const fmt=n=>n!=null?Number(n).toLocaleString('zh-TW'):'—';
+
+/* ── TABS ── */
+/* ── OWNER LOOKUP (sub-tenants) ── */
+function getOwner(itemName){
+  if(itemName.startsWith('外展A')) return '酷樂邦';
+  if(itemName.startsWith('船池機房')) return '酷樂邦';
+  if(itemName.includes('水產街電錶')) return '水產街';
+  return null;
+}
+
+function switchTab(id,btn){
+  document.querySelectorAll('.panel').forEach(p=>p.classList.remove('active'));
+  document.querySelectorAll('.tab-btn').forEach(b=>{b.classList.remove('active');b.classList.remove('report-active');});
+  document.getElementById('panel-'+id).classList.add('active');
+  if(id==='report') btn.classList.add('report-active');
+  else btn.classList.add('active');
+}
+
+/* ── KPI ROW ── */
+function buildKPI(){
+  const tu=RAW.map(d=>d.items.reduce((s,i)=>s+(i.usage||0),0));
+  // Render newest-first; diff still compares to chronologically previous period
+  const idx=RAW.map((_,i)=>i).reverse();
+  document.getElementById('kpi-row').innerHTML=idx.map(i=>{
+    const d=RAW[i];
+    const prev=i>0?RAW[i-1].total:null;
+    const diff=prev!==null?d.total-prev:null;
+    return`<div class="kpi">
+      <div class="kpi-period"><span class="kpi-yr-tag" data-year="${d.year}">${d.year}</span>${d.period}</div>
+      <div class="kpi-val">$${fmt(d.total)}</div>
+      <div class="kpi-footer">
+        <span class="kpi-usage">用電 ${fmt(tu[i])} 度</span>
+        ${diff!==null?`<span class="kpi-diff ${diff>0?'up':'dn'}">${diff>0?'▲':'▼'} ${fmt(Math.abs(diff))}</span>`:''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+/* ── BAR CHART ── */
+let barChart=null, selMonth=RAW.length-1;
+function buildMonthPick(){
+  let html='';
+  let lastYear=null;
+  // Iterate newest-first; year groups naturally show 2026 then 2025
+  for(let i=RAW.length-1;i>=0;i--){
+    const d=RAW[i];
+    if(d.year!==lastYear){
+      if(lastYear!==null) html+=`<div class="m-year-div"></div>`;
+      lastYear=d.year;
+    }
+    html+=`<button class="m-btn ${i===selMonth?'sel':''}" onclick="selectMonth(${i})"><span class="m-yr" data-year="${d.year}">${d.year}</span>${d.label}</button>`;
+  }
+  document.getElementById('month-pick').innerHTML=html;
+}
+function selectMonth(i){selMonth=i;buildMonthPick();updateBarChart();}
+function updateBarChart(){
+  const data=RAW[selMonth].items.filter(it=>it.usage!==null).sort((a,b)=>b.amt-a.amt);
+  const labels=data.map(it=>it.name.replace('(B廠區)','').replace('(環中路圍牆)','').replace('(警衛室)',''));
+  const vals=data.map(it=>it.amt);
+  const colors=data.map((_,i)=>COLORS[i%COLORS.length]);
+  if(barChart){barChart.data.labels=labels;barChart.data.datasets[0].data=vals;barChart.data.datasets[0].backgroundColor=colors;barChart.update();return;}
+  barChart=new Chart(document.getElementById('barChart'),{
+    type:'bar',
+    data:{labels,datasets:[{data:vals,backgroundColor:colors,borderRadius:4,borderSkipped:false}]},
+    options:{
+      responsive:true,maintainAspectRatio:false,
+      plugins:{legend:{display:false},tooltip:{callbacks:{label:ctx=>`$${fmt(ctx.raw)}`}}},
+      scales:{
+        x:{ticks:{color:'#64748b',font:{size:11},maxRotation:35},grid:{color:'#1e293b'}},
+        y:{ticks:{color:'#64748b',font:{size:11},callback:v=>`${(v/1000).toFixed(0)}k`},grid:{color:'#1e293b'}}
+      }
+    }
+  });
+}
+
+/* ── PROGRESS BARS ── */
+function buildPBars(){
+  const latest=RAW[RAW.length-1];
+  document.getElementById('pbar-title').textContent=`費用佔比（最新期 ${latest.year} ${latest.label}）`;
+  const sorted=[...latest.items].filter(i=>i.usage).sort((a,b)=>b.amt-a.amt).slice(0,5);
+  document.getElementById('pbar-list').innerHTML=sorted.map((item,i)=>{
+    const pct=((item.amt/latest.total)*100).toFixed(1);
+    return`<div class="pbar-item">
+      <div class="pbar-lbl"><span class="pbar-name">${item.name.replace('(B廠區)','').replace('(警衛室)','')}</span><span class="pbar-pct" style="color:${COLORS[i]}">${pct}%</span></div>
+      <div class="pbar-bg"><div class="pbar-fill" style="width:${pct}%;background:${COLORS[i]}"></div></div>
+    </div>`;
+  }).join('');
+}
+
+/* ── SPOTS ── */
+function buildSpots(){
+  const spots=[
+    {lbl:'全期最高月電費',val:'2026/07月 $513,667',sub:'較06月 +0.06%，用電進入平台期',c:'#e8522a'},
+    {lbl:'空調ACMP1 平台期訊號',val:'2026/07月 39,760度 $218,680',sub:'首次月降(-0.7%)，連兩月維持 40k',c:'#f0a830'},
+    {lbl:'廣告燈用電異常暴增 ⚠',val:'2026/07月 256度 (+55%)',sub:'戶外照明用電理應穩定，需查核',c:'#a855f7'},
+    {lbl:'水產街電錶★ 累計',val:'2026/07月 $125,070（22,740度）',sub:'12期累計 $442,111，續居第二',c:'#3a7bd5'},
+  ];
+  document.getElementById('spot-list').innerHTML=spots.map(s=>`<div class="spot">
+    <div class="spot-dot" style="background:${s.c}"></div>
+    <div><div class="spot-lbl">${s.lbl}</div><div class="spot-val" style="color:${s.c}">${s.val}</div><div class="spot-sub">${s.sub}</div></div>
+  </div>`).join('');
+}
+
+/* ── TREND CHARTS ── */
+const chartOpts=(yFmt)=>({
+  responsive:true,maintainAspectRatio:false,
+  plugins:{legend:{labels:{color:'#64748b',font:{size:11}}},tooltip:{mode:'index',intersect:false,callbacks:{label:ctx=>`${ctx.dataset.label}：${yFmt(ctx.raw)}`}}},
+  scales:{
+    x:{ticks:{color:'#64748b'},grid:{color:'#1e293b'}},
+    y:{ticks:{color:'#64748b',callback:yFmt},grid:{color:'#1e293b'}}
+  }
+});
+function buildTrends(){
+  // Total
+  new Chart(document.getElementById('trendTotal'),{type:'line',data:{
+    labels:CHART_LABELS,
+    datasets:[{label:'電費總計',data:RAW.map(d=>d.total),borderColor:'#e8522a',backgroundColor:'rgba(232,82,42,.1)',fill:true,tension:.3,pointRadius:5,pointBackgroundColor:'#e8522a'}]
+  },options:chartOpts(v=>`${(v/1000).toFixed(0)}k`)});
+  // Items amt
+  const keys=[{k:'哈魚碼頭(B廠區)',c:'#3a7bd5'},{k:'水產街電錶★',c:'#e8522a'},{k:'空調ACMP1',c:'#f0a830'},{k:'漁人町手抄(警衛室)',c:'#22c55e'}];
+  new Chart(document.getElementById('trendItems'),{type:'line',data:{
+    labels:CHART_LABELS,
+    datasets:keys.map(k=>({label:k.k.replace('(B廠區)','').replace('(警衛室)',''),data:RAW.map(d=>d.items.find(i=>i.name===k.k)?.amt||0),borderColor:k.c,backgroundColor:'transparent',tension:.3,pointRadius:4,pointBackgroundColor:k.c}))
+  },options:chartOpts(v=>`${(v/1000).toFixed(0)}k`)});
+  // Items usage
+  new Chart(document.getElementById('trendUsage'),{type:'bar',data:{
+    labels:CHART_LABELS,
+    datasets:keys.map(k=>({label:k.k.replace('(B廠區)','').replace('(警衛室)',''),data:RAW.map(d=>d.items.find(i=>i.name===k.k)?.usage||0),backgroundColor:k.c+'bb',borderRadius:3}))
+  },options:{...chartOpts(v=>v),plugins:{...chartOpts(v=>v).plugins,legend:{labels:{color:'#64748b',font:{size:11}}}}}});
+}
+
+/* ── DETAIL ── */
+function buildDetail(){
+  // Render newest-first
+  const reversed=RAW.slice().reverse();
+  document.getElementById('panel-detail').innerHTML=reversed.map(d=>{
+    // Sort by amt desc; put null-amt (discontinued) rows at the bottom
+    const sorted=[...d.items].sort((a,b)=>(b.amt??-1)-(a.amt??-1));
+    return`<div class="card"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <div class="card-title" style="margin:0;display:flex;align-items:center;gap:8px"><span class="kpi-yr-tag" data-year="${d.year}">${d.year}</span>${d.period}</div>
+      <span style="font-family:var(--mono);color:var(--red);font-weight:700;font-size:15px">$${fmt(d.total)}</span>
+    </div>
+    <div class="tbl-wrap"><table>
+      <thead><tr><th>項目</th><th class="tr">使用度數</th><th class="tr">應收金額</th><th class="tr">佔比</th></tr></thead>
+      <tbody>${sorted.map(item=>{
+        if(item.discontinued){
+          return`<tr style="opacity:.55;background:repeating-linear-gradient(45deg,transparent,transparent 6px,rgba(100,116,139,.05) 6px,rgba(100,116,139,.05) 12px)">
+            <td style="color:var(--t4)">${item.name} <span style="background:#334155;color:#94a3b8;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:700;margin-left:4px">⋯ 斷點</span></td>
+            <td class="mono tr" style="color:var(--t4)">—</td>
+            <td class="mono tr" style="color:var(--t4)">本期未列於帳單</td>
+            <td class="tr" style="color:var(--t4)">—</td>
+          </tr>`;
+        }
+        const owner=getOwner(item.name);
+        const ownerTag=owner?` <span class="tenant-tag" data-tenant="${owner}">${owner}</span>`:'';
+        const rowCls=[item.name.includes('水產街')?'highlight-row':'', owner?`tenant-row-${owner}`:''].filter(Boolean).join(' ');
+        const badge=item.alert?` <span style="background:#7f1d1d;color:#fca5a5;font-size:10px;padding:1px 6px;border-radius:4px;font-weight:700;margin-left:4px">⚠ 異常</span>`
+                  :item.notice?` <span style="background:rgba(240,168,48,.18);color:var(--gold);font-size:10px;padding:1px 6px;border-radius:4px;font-weight:700;margin-left:4px">◆ 注意</span>`:'';
+        const amtStyle=item.alert?'color:#ef4444;font-weight:700':item.notice?'color:var(--gold);font-weight:700':'';
+        return`<tr class="${rowCls}">
+          <td>${item.name}${badge}${ownerTag}${item.note?`<div style="font-size:10px;color:var(--t4);margin-top:2px;font-style:italic">↳ ${item.note}</div>`:''}</td>
+          <td class="mono tr" style="color:var(--t3)">${item.usage!==null?fmt(item.usage):'—'}</td>
+          <td class="mono tr" style="${amtStyle}">$${fmt(item.amt)}</td>
+          <td class="tr"><span class="pct-badge">${((item.amt/d.total)*100).toFixed(1)}%</span></td>
+        </tr>`;
+      }).join('')}</tbody>
+    </table></div></div>`;
+  }).join('');
+}
+
+/* ── TENANT (酷樂邦) RECEIVABLE ── */
+function buildTenantReport(){
+  // Extract per-period 外展A & 船池機房 data, keeping RAW order (old→new)
+  const rows=RAW.map(d=>{
+    const zhanA=d.items.find(it=>it.name.startsWith('外展A'));
+    const chuan=d.items.find(it=>it.name.startsWith('船池機房'));
+    return{
+      period:d.period, label:d.label, year:d.year,
+      zhanA_usage: zhanA?.usage ?? 0, zhanA_amt: zhanA?.amt ?? 0,
+      chuan_usage: chuan?.usage ?? 0, chuan_amt: chuan?.amt ?? 0,
+      subtotal: (zhanA?.amt ?? 0)+(chuan?.amt ?? 0),
+    };
+  });
+  const totalReceivable=rows.reduce((s,r)=>s+r.subtotal,0);
+  const latest=rows[rows.length-1];
+  const activeMonths=rows.filter(r=>r.subtotal>0).length;
+
+  // Summary strip
+  document.getElementById('tenant-summary').innerHTML=`
+    <div class="kpi" style="border-left:3px solid #14b8a6">
+      <div class="kpi-period">累計應收</div>
+      <div class="kpi-val" style="color:#5eead4">$${fmt(totalReceivable)}</div>
+      <div class="kpi-footer"><span class="kpi-usage">${activeMonths} 個計費月</span></div>
+    </div>
+    <div class="kpi" style="border-left:3px solid #14b8a6">
+      <div class="kpi-period"><span class="kpi-yr-tag" data-year="${latest.year}">${latest.year}</span>${latest.label}·最新月</div>
+      <div class="kpi-val" style="color:#5eead4">$${fmt(latest.subtotal)}</div>
+      <div class="kpi-footer"><span class="kpi-usage">外展A $${fmt(latest.zhanA_amt)} · 船池 $${fmt(latest.chuan_amt)}</span></div>
+    </div>
+    <div class="kpi" style="border-left:3px solid #14b8a6">
+      <div class="kpi-period">酷樂邦錶號</div>
+      <div class="kpi-val" style="color:#5eead4;font-size:14px">外展A · 船池機房</div>
+      <div class="kpi-footer"><span class="kpi-usage">帳單原價 · 無加成</span></div>
+    </div>`;
+
+  // Detail table — render newest-first
+  const rowsDesc=[...rows].reverse();
+  document.getElementById('tenant-table').innerHTML=`<table>
+    <thead><tr>
+      <th>期間</th>
+      <th class="tr">外展A 度數</th><th class="tr">外展A 金額</th>
+      <th class="tr">船池機房 度數</th><th class="tr">船池機房 金額</th>
+      <th class="tr">當月應收</th>
+    </tr></thead>
+    <tbody>${rowsDesc.map(r=>{
+      const isEmpty=r.subtotal===0;
+      const opacity=isEmpty?'opacity:.35':'';
+      return`<tr class="tenant-row-酷樂邦" style="${opacity}">
+        <td><span class="kpi-yr-tag" data-year="${r.year}">${r.year}</span> ${r.period}</td>
+        <td class="mono tr" style="color:var(--t3)">${r.zhanA_usage>0?fmt(r.zhanA_usage):'—'}</td>
+        <td class="mono tr">${r.zhanA_amt>0?'$'+fmt(r.zhanA_amt):'—'}</td>
+        <td class="mono tr" style="color:var(--t3)">${r.chuan_usage>0?fmt(r.chuan_usage):'—'}</td>
+        <td class="mono tr">${r.chuan_amt>0?'$'+fmt(r.chuan_amt):'—'}</td>
+        <td class="mono tr" style="color:#5eead4;font-weight:700">${r.subtotal>0?'$'+fmt(r.subtotal):'—'}</td>
+      </tr>`;
+    }).join('')}
+    <tr style="border-top:2px solid #14b8a6;background:rgba(20,184,166,.08)">
+      <td style="font-weight:700;color:#5eead4">累計合計</td>
+      <td class="mono tr" style="color:var(--t3)">${fmt(rows.reduce((s,r)=>s+r.zhanA_usage,0))}</td>
+      <td class="mono tr">$${fmt(rows.reduce((s,r)=>s+r.zhanA_amt,0))}</td>
+      <td class="mono tr" style="color:var(--t3)">${fmt(rows.reduce((s,r)=>s+r.chuan_usage,0))}</td>
+      <td class="mono tr">$${fmt(rows.reduce((s,r)=>s+r.chuan_amt,0))}</td>
+      <td class="mono tr" style="color:#5eead4;font-weight:800">$${fmt(totalReceivable)}</td>
+    </tr>
+    </tbody></table>`;
+
+  // Charts (labels use CHART_LABELS defined earlier)
+  const chOpts=(ttl)=>({
+    responsive:true, maintainAspectRatio:false,
+    plugins:{legend:{display:false},title:{display:false}},
+    scales:{
+      x:{ticks:{color:'#64748b',font:{size:10}},grid:{display:false}},
+      y:{ticks:{color:'#64748b',callback:v=>`${(v/1000).toFixed(0)}k`},grid:{color:'#1e293b'},beginAtZero:true}
+    }
+  });
+  new Chart(document.getElementById('trendZhanA'),{type:'line',data:{
+    labels:CHART_LABELS,
+    datasets:[{label:'外展A',data:rows.map(r=>r.zhanA_amt),borderColor:'#14b8a6',backgroundColor:'rgba(20,184,166,.12)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#14b8a6',spanGaps:false}]
+  },options:chOpts()});
+  new Chart(document.getElementById('trendChuanChi'),{type:'line',data:{
+    labels:CHART_LABELS,
+    datasets:[{label:'船池機房',data:rows.map(r=>r.chuan_amt),borderColor:'#14b8a6',backgroundColor:'rgba(20,184,166,.12)',fill:true,tension:.3,pointRadius:4,pointBackgroundColor:'#14b8a6',spanGaps:false}]
+  },options:chOpts()});
+}
+
+/* ── INIT ── */
+buildKPI();buildMonthPick();buildPBars();buildSpots();buildDetail();
+requestAnimationFrame(()=>{updateBarChart();buildTrends();buildTenantReport();});
+
+// Chart.js global defaults
+Chart.defaults.color='#64748b';
+</script>
+</body>
+</html>
